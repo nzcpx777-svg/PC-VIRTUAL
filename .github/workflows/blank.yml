@@ -1,0 +1,143 @@
+# ==================================================
+# 🖥️ MÁQUINA VIRTUAL COMPLETA — TUDO EM UM ARQUIVO
+# ==================================================
+# Funciona em: Windows / Linux / macOS
+# Requisito: Python 3.8+
+# ==================================================
+
+class MaquinaVirtual:
+    def __init__(self, memoria_tamanho=256):
+        # Registradores
+        self.ax = 0
+        self.bx = 0
+        self.cx = 0
+        self.dx = 0
+        self.pc = 0
+        self.sp = 0
+        self.flag_zero = False
+        self.memoria = [0] * memoria_tamanho
+        self.executando = True
+        self.programa = []
+
+    def executar_instrucao(self, instrucao, *args):
+        match instrucao.upper():
+            case "MOV":
+                reg, valor = args
+                setattr(self, reg, int(valor))
+            case "ADD":
+                reg1, reg2 = args
+                setattr(self, reg1, getattr(self, reg1) + getattr(self, reg2))
+            case "SUB":
+                reg1, reg2 = args
+                setattr(self, reg1, getattr(self, reg1) - getattr(self, reg2))
+            case "MUL":
+                reg1, reg2 = args
+                setattr(self, reg1, getattr(self, reg1) * getattr(self, reg2))
+            case "DIV":
+                reg1, reg2 = args
+                b = getattr(self, reg2)
+                if b != 0:
+                    setattr(self, reg1, getattr(self, reg1) // b)
+            case "INC":
+                reg = args[0]
+                setattr(self, reg, getattr(self, reg) + 1)
+            case "DEC":
+                reg = args[0]
+                setattr(self, reg, getattr(self, reg) - 1)
+            case "JMP":
+                self.pc = int(args[0]) - 1
+            case "JZ":
+                if self.flag_zero:
+                    self.pc = int(args[0]) - 1
+            case "CMP":
+                a, b = getattr(self, args[0]), getattr(self, args[1])
+                self.flag_zero = (a == b)
+            case "PRINT":
+                print(f">> {args[0]} = {getattr(self, args[0])}")
+            case "HALT":
+                self.executando = False
+                print("✅ Execução finalizada!")
+            case _:
+                print(f"⚠️ Instrução desconhecida: {instrucao}")
+
+    def carregar_programa_embutido(self):
+        """Programa de exemplo embutido direto no código"""
+        codigo = """
+MOV AX, 10
+MOV BX, 5
+ADD AX, BX
+PRINT AX
+MOV CX, 3
+MUL AX, CX
+PRINT AX
+CMP AX, 45
+JZ 12
+PRINT BX
+MOV DX, 99
+PRINT DX
+HALT
+"""
+        self.programa = []
+        for linha in codigo.strip().split('\n'):
+            linha = linha.strip()
+            if linha and not linha.startswith(';'):
+                partes = linha.replace(',', ' ').split()
+                self.programa.append(partes)
+        print(f"📂 Programa carregado: {len(self.programa)} instruções")
+
+    def carregar_programa_externo(self, caminho):
+        try:
+            with open(caminho, 'r', encoding='utf-8') as f:
+                self.programa = []
+                for linha in f:
+                    linha = linha.strip()
+                    if linha and not linha.startswith(';'):
+                        partes = linha.replace(',', ' ').split()
+                        self.programa.append(partes)
+            print(f"📂 Arquivo carregado: {len(self.programa)} instruções")
+            return True
+        except FileNotFoundError:
+            print(f"ℹ️ Arquivo não encontrado, usando programa padrão")
+            return False
+
+    def rodar(self):
+        print("\n▶️ Iniciando execução...")
+        self.executando = True
+        self.pc = 0
+        while self.executando and self.pc < len(self.programa):
+            cmd = self.programa[self.pc]
+            self.executar_instrucao(cmd[0], *cmd[1:])
+            self.pc += 1
+
+    def status(self):
+        print(f"\n📊 Estado Final:")
+        print(f"AX={self.ax}  BX={self.bx}  CX={self.cx}  DX={self.dx}")
+        print(f"PC={self.pc}  ZF={self.flag_zero}")
+
+
+# ==================================================
+# 🚀 EXECUÇÃO PRINCIPAL
+# ==================================================
+if __name__ == "__main__":
+    print("=" * 45)
+    print("   🖥️ MÁQUINA VIRTUAL — VERSÃO ÚNICA")
+    print("=" * 45)
+    
+    vm = MaquinaVirtual()
+    
+    # Tenta carregar um arquivo externo, senão usa o programa embutido
+    if not vm.carregar_programa_externo("instrucoes.txt"):
+        vm.carregar_programa_embutido()
+    
+    vm.rodar()
+    vm.status()
+    
+    print("\n" + "=" * 45)
+    print("📦 COMO GERAR O EXECUTÁVEL (.EXE):")
+    print("   1. pip install pyinstaller")
+    print("   2. pyinstaller --onefile MaquinaVirtual.py")
+    print("   3. O arquivo estará na pasta 'dist/'")
+    print("=" * 45)
+    
+    input("\nPressione ENTER para sair...")
+    
